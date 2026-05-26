@@ -370,11 +370,13 @@ public class FTPConnection {
             return message;
         }
 
+        // Used to categorize reply codes and decide control-flow (e.g., wait for final replies).
         // True for 2xx FTP replies (successful completion).
         public boolean isSuccess() {
             return code >= 200 && code < 300;
         }
 
+        // True for 1xx FTP replies (preliminary; server will send a final reply later).
         public boolean isPrelim() {
             return code >= 100 && code < 200;
         }
