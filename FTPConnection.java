@@ -22,7 +22,7 @@ public class FTPConnection {
 
     public FTPReply connect(String host, int port) throws IOException {
         close();
-
+        // create socket
         socket = new Socket(host, port);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -77,7 +77,7 @@ public class FTPConnection {
             sendCommand(cmd);
             FTPReply pre = read();
 
-            if (!pre.isPositivePreliminary() && !pre.isPositiveCompletion()) {
+            if (!pre.isPrelim() && !pre.isSuccess()) {
                 return new DataResult(pre, pre, "");
             }
 
@@ -86,7 +86,7 @@ public class FTPConnection {
             closeSock(dataSock);
             opened = false;
 
-            FTPReply done = pre.isPositiveCompletion()
+            FTPReply done = pre.isSuccess()
                 ? pre
                 : read();
             return new DataResult(pre, done, text);
@@ -109,7 +109,7 @@ public class FTPConnection {
             sendCommand("RETR " + remote);
             FTPReply pre = read();
 
-            if (!pre.isPositivePreliminary() && !pre.isPositiveCompletion()) {
+            if (!pre.isPrelim() && !pre.isSuccess()) {
                 return new TransferResult(pre, pre, "Download rejected by server.");
             }
 
@@ -126,7 +126,7 @@ public class FTPConnection {
             closeSock(dataSock);
             opened = false;
 
-            FTPReply done = pre.isPositiveCompletion()
+            FTPReply done = pre.isSuccess()
                 ? pre
                 : read();
             String msg = "Downloaded " + bytes + " bytes to " + local.getPath();
@@ -152,7 +152,7 @@ public class FTPConnection {
             sendCommand("STOR " + remote);
             FTPReply pre = read();
 
-            if (!pre.isPositivePreliminary() && !pre.isPositiveCompletion()) {
+            if (!pre.isPrelim() && !pre.isSuccess()) {
                 return new TransferResult(pre, pre, "Upload rejected by server.");
             }
 
@@ -169,7 +169,7 @@ public class FTPConnection {
             closeSock(dataSock);
             opened = false;
 
-            FTPReply done = pre.isPositiveCompletion()
+            FTPReply done = pre.isSuccess()
                 ? pre
                 : read();
             String msg = "Uploaded " + bytes + " bytes from " + local.getPath();
@@ -206,8 +206,9 @@ public class FTPConnection {
         StringBuilder message = new StringBuilder(firstLine);
         int code = parseCode(firstLine);
 
-        if (isMultilineReply(firstLine)) {
+        if (multiReply(firstLine)) {
             String terminator = firstLine.substring(0, 3) + " ";
+            String line = System.lineSeparator();
 
             while (true) {
                 String nextLine = reader.readLine();
@@ -215,7 +216,7 @@ public class FTPConnection {
                     throw new EOFException("Server closed the connection during a multiline reply.");
                 }
 
-                message.append(System.lineSeparator()).append(nextLine);
+                message.append(line).append(nextLine);
                 if (nextLine.startsWith(terminator)) {
                     break;
                 }
@@ -269,7 +270,7 @@ public class FTPConnection {
 
     private FTPDataConnection openData() throws IOException {
         FTPReply pasv = send("PASV");
-        if (!pasv.isPositiveCompletion()) {
+        if (!pasv.isSuccess()) {
             throw new IOException("PASV failed: " + pasv.getMessage());
         }
         String host2 = socket.getInetAddress().getHostAddress();
@@ -278,7 +279,7 @@ public class FTPConnection {
 
     private void setBinaryMode() throws IOException {
         FTPReply type = send("TYPE I");
-        if (!type.isPositiveCompletion()) {
+        if (!type.isSuccess()) {
             throw new IOException("Failed to switch to binary mode: " + type.getMessage());
         }
     }
@@ -330,7 +331,7 @@ public class FTPConnection {
         }
     }
 
-    private boolean isMultilineReply(String line) {
+    private boolean multiReply(String line) {
         return line.length() > 3 && line.charAt(3) == '-';
     }
 
@@ -369,11 +370,12 @@ public class FTPConnection {
             return message;
         }
 
-        public boolean isPositiveCompletion() {
+        // True for 2xx FTP replies (successful completion).
+        public boolean isSuccess() {
             return code >= 200 && code < 300;
         }
 
-        public boolean isPositivePreliminary() {
+        public boolean isPrelim() {
             return code >= 100 && code < 200;
         }
     }

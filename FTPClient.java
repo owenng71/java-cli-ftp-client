@@ -47,7 +47,7 @@ public class FTPClient {
         FTPConnection.FTPReply login = con.login(profile.getUsername(), profile.getPassword());
         printReply(login);
 
-        if (!login.isPositiveCompletion()) {
+        if (!login.isSuccess()) {
             throw new IOException("Login failed. The server rejected the provided credentials.");
         }
 
