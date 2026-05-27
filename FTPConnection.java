@@ -98,7 +98,7 @@ public class FTPConnection {
     }
 
     public TransferResult get(String remote, File local) throws IOException {
-        setBinaryMode();
+        BinaryMode();
         FTPDataConnection dataCon = openData();
         Socket dataSock = dataCon.open();
         boolean opened = false;
@@ -141,7 +141,7 @@ public class FTPConnection {
     }
 
     public TransferResult put(File local, String remote) throws IOException {
-        setBinaryMode();
+        BinaryMode();
         FTPDataConnection dataCon = openData();
         Socket dataSock = dataCon.open();
         boolean opened = false;
@@ -274,10 +274,10 @@ public class FTPConnection {
             throw new IOException("PASV failed: " + pasv.getMessage());
         }
         String host2 = socket.getInetAddress().getHostAddress();
-        return FTPDataConnection.fromPasvReply(pasv.getMessage(), host2);
+        return FTPDataConnection.PasvReply(pasv.getMessage(), host2);
     }
 
-    private void setBinaryMode() throws IOException {
+    private void BinaryMode() throws IOException {
         FTPReply type = send("TYPE I");
         if (!type.isSuccess()) {
             throw new IOException("Failed to switch to binary mode: " + type.getMessage());
@@ -370,13 +370,12 @@ public class FTPConnection {
             return message;
         }
 
-        // Used to categorize reply codes and decide control-flow (e.g., wait for final replies).
-        // True for 2xx FTP replies (successful completion).
+        // Used to categorize reply codes
         public boolean isSuccess() {
             return code >= 200 && code < 300;
         }
 
-        // True for 1xx FTP replies (preliminary; server will send a final reply later).
+        //preliminary, server will send a final reply later)
         public boolean isPrelim() {
             return code >= 100 && code < 200;
         }

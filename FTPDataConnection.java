@@ -3,7 +3,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class FTPDataConnection {
-    private static final int TIMEOUT = 10000;
+    private static final int timeout = 10000;
     private final String host;
     private final String host2;
     private final int port;
@@ -34,7 +34,7 @@ public class FTPDataConnection {
         throw err;
     }
 
-    public static FTPDataConnection fromPasvReply(String pasv, String host2) throws IOException {
+    public static FTPDataConnection PasvReply(String pasv, String host2) throws IOException {
         int start = pasv.indexOf('(');
         int end = pasv.indexOf(')');
         if (start < 0 || end <= start) {
@@ -57,7 +57,7 @@ public class FTPDataConnection {
 
     private Socket openTo(String host) throws IOException {
         Socket sock = new Socket();
-        sock.connect(new InetSocketAddress(host, port), TIMEOUT);
+        sock.connect(new InetSocketAddress(host, port), timeout);
         return sock;
     }
 }
